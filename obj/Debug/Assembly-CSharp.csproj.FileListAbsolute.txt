@@ -1,0 +1,2 @@
+/Users/cutopia/unity/Hamster Rancher/obj/Debug/Assembly-CSharp.csprojAssemblyReference.cache
+/Users/cutopia/unity/Hamster Rancher/obj/Debug/Assembly-CSharp.csproj.CoreCompileInputs.cache
