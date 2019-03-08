@@ -11,8 +11,6 @@ public class RevolvingBackground : MonoBehaviour
 {
     [SerializeField] List<GameObject> backgroundPieces;
     private float totalBackgroundWidth;
-    private float startingPosition = 0f;
-    private float currentPosition = 0f;
     private float startTime;
     private float totalTime = 1f;
 
@@ -67,7 +65,6 @@ public class RevolvingBackground : MonoBehaviour
     
     private void OffsetLayers(float xOffset)
     {
-        float startingOffset = currentPosition % totalBackgroundWidth;
         foreach (var dictItem in piecesSeparatedByZ)
         {
             float adjustedOffset = (dictItem.Key > 0) ? xOffset / dictItem.Key : (dictItem.Key < 0) ? xOffset * -1 * dictItem.Key : xOffset;
@@ -78,7 +75,7 @@ public class RevolvingBackground : MonoBehaviour
                 float currentItemWidth = GetCalculatedWidth(item);
                 if (item.transform.position.x + xOffset > GetCamUnits().x)
                 {
-                    // adjust position to be wrapped to other side of startingOffset
+                    // adjust position to be wrapped to other side
                     wrapAdjustment = totalBackgroundWidth * -1;
                 }
                 else if (item.transform.position.x + xOffset + currentItemWidth < 0)
@@ -97,13 +94,13 @@ public class RevolvingBackground : MonoBehaviour
         // move with the mouse while the button is down
         if (Input.GetMouseButton(0))
         {
-            OffsetLayers(currentPosition + Input.GetAxis("Mouse X"));
+            OffsetLayers(Input.GetAxis("Mouse X"));
         }
         else
         {
             // drift gradually to a stop once mouse is released
             float t = (Time.time - startTime) / totalTime;
-            float offset = Mathf.Lerp(startingPosition, startingPosition + (speed * totalTime), t);
+            float offset = Mathf.Lerp(speed, 0f, t);
             if ((Time.time - startTime) > totalTime)
             {
                 onUpdate -= UpdateBackgroundPosition;
@@ -114,7 +111,6 @@ public class RevolvingBackground : MonoBehaviour
 
     public void OnMouseDown()
     {
-        startingPosition = currentPosition;
         if (onUpdate == null)
         {
             onUpdate = UpdateBackgroundPosition;
@@ -125,9 +121,7 @@ public class RevolvingBackground : MonoBehaviour
     {
         startTime = Time.time;
         speed = Input.GetAxis("Mouse X");
-        totalTime = startTime + Mathf.Abs(speed);
-        Debug.Log("Speed: " + speed + " TotalTime: " + totalTime);
-        startingPosition = currentPosition;
+        totalTime = Mathf.Abs(speed) / 2;
     }
     
     /// <summary>
