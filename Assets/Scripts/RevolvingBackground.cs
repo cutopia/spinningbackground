@@ -5,7 +5,7 @@ using UnityEngine;
 /// given a bunch of background pieces, make them into a parallax widget that can be scrolled horizontally
 /// to simulate the player standing in place and spinning around to see everything.
 /// z position of each piece is important as it determines its layer.
-/// each layer will be tiled into place separately, so for best results, each layer should all total to the same width.
+/// for best results, each layer should all total to the same width.
 /// </summary>
 public class RevolvingBackground : MonoBehaviour
 {
@@ -29,9 +29,17 @@ public class RevolvingBackground : MonoBehaviour
         Setup();
     }
 
+    /// <summary>
+    /// sets up the layers and sizes them to fit the view height
+    /// This is also called when the resolution changes
+    /// in that scenario, the user's current place is lost as everything
+    /// resets its position for the new size.
+    /// </summary>
     private void Setup()
     {
+        Debug.Log("Setup");
         screenDims = new Vector2Int(Screen.width, Screen.height);
+        piecesSeparatedByZ = new Dictionary<int, List<GameObject>>();
         foreach (GameObject item in backgroundPieces)
         {
             ScaleSpriteToFit(item);
@@ -44,7 +52,7 @@ public class RevolvingBackground : MonoBehaviour
             piecesSeparatedByZ[zIndex].Add(item);
         }
         totalBackgroundWidth = GetTotalWidthOfBackgroundPieces();
-        TileBackgroundPieces(0);
+        TileBackgroundPieces();
         PositionClickCollider();
     }
 
@@ -56,13 +64,40 @@ public class RevolvingBackground : MonoBehaviour
         }
         onUpdate?.Invoke();
     }
+    
+    private void OffsetLayers(float xOffset)
+    {
+        float startingOffset = currentPosition % totalBackgroundWidth;
+        foreach (var dictItem in piecesSeparatedByZ)
+        {
+            float adjustedOffset = (dictItem.Key > 0) ? xOffset / dictItem.Key : (dictItem.Key < 0) ? xOffset * -1 * dictItem.Key : xOffset;
+            foreach (GameObject item in dictItem.Value)
+            {
+                
+                float wrapAdjustment = 0f;
+                float currentItemWidth = GetCalculatedWidth(item);
+                if (item.transform.position.x + xOffset > GetCamUnits().x)
+                {
+                    // adjust position to be wrapped to other side of startingOffset
+                    wrapAdjustment = totalBackgroundWidth * -1;
+                }
+                else if (item.transform.position.x + xOffset + currentItemWidth < 0)
+                {
+                    wrapAdjustment += totalBackgroundWidth;
+                }
+                var pos = item.transform.position;
+                pos.x += adjustedOffset + wrapAdjustment;
+                item.transform.position = pos;
+            }
+        }
+    }
 
     private void UpdateBackgroundPosition()
     {
         // move with the mouse while the button is down
         if (Input.GetMouseButton(0))
         {
-            TileBackgroundPieces(currentPosition + Input.GetAxis("Mouse X"));
+            OffsetLayers(currentPosition + Input.GetAxis("Mouse X"));
         }
         else
         {
@@ -73,7 +108,7 @@ public class RevolvingBackground : MonoBehaviour
             {
                 onUpdate -= UpdateBackgroundPosition;
             }
-            TileBackgroundPieces(offset);
+            OffsetLayers(offset);
         }
     }
 
@@ -95,28 +130,23 @@ public class RevolvingBackground : MonoBehaviour
         startingPosition = currentPosition;
     }
     
-    void TileBackgroundPieces(float xOffset)
+    /// <summary>
+    /// initially tiles the background pieces into their starting positions.
+    /// they are layered by z index.
+    /// </summary>
+    void TileBackgroundPieces()
     {
-        currentPosition = xOffset;
-        float startingOffset = currentPosition % totalBackgroundWidth;
-        float totalWidthUsed = 0f;
-        foreach (GameObject item in backgroundPieces)
+        foreach (var dictItem in piecesSeparatedByZ)
         {
-            float wrapAdjustment = 0f;
-            float currentItemWidth = GetCalculatedWidth(item);
-            if (startingOffset + totalWidthUsed > GetCamUnits().x)
+            float totalWidthUsed = 0f;
+            foreach (GameObject item in dictItem.Value)
             {
-                // adjust position to be wrapped to other side of startingOffset
-                wrapAdjustment = totalBackgroundWidth * -1;
+                float currentItemWidth = GetCalculatedWidth(item);
+                var pos = item.transform.position;
+                pos.x = totalWidthUsed;
+                item.transform.position = pos;
+                totalWidthUsed += currentItemWidth;
             }
-            else if (startingOffset + totalWidthUsed + currentItemWidth < 0)
-            {
-                wrapAdjustment += totalBackgroundWidth;
-            }
-            var pos = item.transform.position;
-            pos.x = startingOffset + totalWidthUsed + wrapAdjustment;
-            item.transform.position = pos;
-            totalWidthUsed += currentItemWidth;
         }
     }
 
