@@ -70,17 +70,20 @@ public class RevolvingBackground : MonoBehaviour
             float adjustedOffset = (dictItem.Key > 0) ? xOffset / dictItem.Key : (dictItem.Key < 0) ? xOffset * -1 * dictItem.Key : xOffset;
             foreach (GameObject item in dictItem.Value)
             {
-                
+
                 float wrapAdjustment = 0f;
                 float currentItemWidth = GetCalculatedWidth(item);
-                if (item.transform.position.x + xOffset > GetCamUnits().x)
+                if (dictItem.Value.Count > 1)
                 {
-                    // adjust position to be wrapped to other side
-                    wrapAdjustment = totalBackgroundWidth * -1;
-                }
-                else if (item.transform.position.x + xOffset + currentItemWidth < 0)
-                {
-                    wrapAdjustment += totalBackgroundWidth;
+                    if (item.transform.position.x + xOffset > GetCamUnits().x)
+                    {
+                        // adjust position to be wrapped to other side
+                        wrapAdjustment = totalBackgroundWidth * -1;
+                    }
+                    else if (item.transform.position.x + xOffset + currentItemWidth < 0)
+                    {
+                        wrapAdjustment += totalBackgroundWidth;
+                    }
                 }
                 var pos = item.transform.position;
                 pos.x += adjustedOffset + wrapAdjustment;
