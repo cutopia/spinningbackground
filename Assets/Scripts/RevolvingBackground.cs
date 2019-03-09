@@ -73,6 +73,7 @@ public class RevolvingBackground : MonoBehaviour
 
                 float wrapAdjustment = 0f;
                 float currentItemWidth = GetCalculatedWidth(item);
+                // ultimately, only one item doesn't work quite right. You can't scroll left and see the one item layer.
                 if (dictItem.Value.Count > 1)
                 {
                     if (item.transform.position.x + xOffset > GetCamUnits().x)
@@ -97,18 +98,25 @@ public class RevolvingBackground : MonoBehaviour
         // move with the mouse while the button is down
         if (Input.GetMouseButton(0))
         {
-            OffsetLayers(Input.GetAxis("Mouse X"));
+            var movement = Input.GetAxis("Mouse X");
+            if (!Mathf.Approximately(movement, 0))
+            {
+                OffsetLayers(Input.GetAxis("Mouse X"));
+            }
         }
         else
         {
-            // drift gradually to a stop once mouse is released
-            float t = (Time.time - startTime) / totalTime;
-            float offset = Mathf.Lerp(speed, 0f, t);
-            if ((Time.time - startTime) > totalTime)
+            if (!Mathf.Approximately(totalTime, 0))
             {
-                onUpdate -= UpdateBackgroundPosition;
+                // drift gradually to a stop once mouse is released
+                float t = (Time.time - startTime) / totalTime;
+                float offset = Mathf.Lerp(speed, 0f, t);
+                if ((Time.time - startTime) > totalTime)
+                {
+                    onUpdate -= UpdateBackgroundPosition;
+                }
+                OffsetLayers(offset);
             }
-            OffsetLayers(offset);
         }
     }
 
@@ -157,6 +165,7 @@ public class RevolvingBackground : MonoBehaviour
                 totalWidth += GetCalculatedWidth(item);
             }
         }
+        Debug.Log("Total width is " + totalWidth);
         return totalWidth;
     }
 
