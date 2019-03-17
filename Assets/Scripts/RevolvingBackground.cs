@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 /// <summary>
 /// given a bunch of background pieces, make them into a parallax widget that can be scrolled horizontally
@@ -35,21 +36,12 @@ public class RevolvingBackground : MonoBehaviour
     /// </summary>
     private void Setup()
     {
-        Debug.Log("Setup");
         screenDims = new Vector2Int(Screen.width, Screen.height);
-        piecesSeparatedByZ = new Dictionary<int, List<GameObject>>();
-        foreach (GameObject item in backgroundPieces)
-        {
-            ScaleSpriteToFit(item);
-            // sort the item into a layer based on its z index.
-            int zIndex = (int)item.transform.position.z;
-            if (!piecesSeparatedByZ.ContainsKey(zIndex))
-            {
-                piecesSeparatedByZ[zIndex] = new List<GameObject>();
-            }
-            piecesSeparatedByZ[zIndex].Add(item);
-        }
-        totalBackgroundWidth = GetTotalWidthOfBackgroundPieces();
+        backgroundPieces.ForEach(ScaleSpriteToFit);
+        // multiplying by 10 before converting to int so we keep one significant digit from the float.
+        piecesSeparatedByZ = backgroundPieces.GroupBy(item => (int)(item.transform.position.z * 10))
+            .ToDictionary(group => group.Key, group => group.ToList());
+        totalBackgroundWidth = piecesSeparatedByZ[0].Sum(GetCalculatedWidth);
         TileBackgroundPieces();
         PositionClickCollider();
     }
@@ -100,7 +92,7 @@ public class RevolvingBackground : MonoBehaviour
         {
             var movement = Input.GetAxis("Mouse X");
             if (!Mathf.Approximately(movement, 0))
-            {
+            {   
                 OffsetLayers(Input.GetAxis("Mouse X"));
             }
         }
@@ -153,20 +145,6 @@ public class RevolvingBackground : MonoBehaviour
                 totalWidthUsed += currentItemWidth;
             }
         }
-    }
-
-    float GetTotalWidthOfBackgroundPieces()
-    {
-        float totalWidth = 0f;
-        foreach (GameObject item in backgroundPieces)
-        {
-            if (Mathf.Approximately(item.transform.position.z, 0))
-            {
-                totalWidth += GetCalculatedWidth(item);
-            }
-        }
-        Debug.Log("Total width is " + totalWidth);
-        return totalWidth;
     }
 
     float GetCalculatedWidth(GameObject item)
